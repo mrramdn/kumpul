@@ -142,6 +142,16 @@ export async function eventExists(id: string) {
   return rows.length > 0;
 }
 
+/**
+ * Pengecekan awal sebelum body permintaan dibaca: akun lain langsung mendapat 403, bukan pesan validasi
+ * yang membocorkan aturan isian. updateEvent tetap mengecek ulang di dalam transaksi.
+ */
+export async function assertCanManage(eventId: string, actor: Actor) {
+  const [row] = await query<{ owner_id: string }>("SELECT owner_id FROM events WHERE id = $1", [eventId]);
+  if (!row) throw eventNotFound();
+  if (row.owner_id !== actor.id && !actor.isAdmin) throw new ApiError(403, "NOT_EVENT_OWNER");
+}
+
 export async function createEvent(ownerId: string, input: EventInput) {
   const [row] = await query<{ id: string }>(
     `INSERT INTO events (owner_id, title, host, description, location, starts_at, ends_at, capacity)

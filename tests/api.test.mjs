@@ -208,6 +208,9 @@ describe("acara", () => {
     const edit = await other("PUT", `/api/events/${event.id}`, { body: eventBody({ title: "Diambil alih" }) });
     assert.equal(edit.status, 403);
     assert.equal(edit.body.error.code, "NOT_EVENT_OWNER");
+    // Isian yang tidak valid pun tetap 403: hak akses dicek sebelum validasi.
+    const invalid = await other("PUT", `/api/events/${event.id}`, { body: { title: "x" } });
+    assert.equal(invalid.status, 403);
     assert.equal((await other("DELETE", `/api/events/${event.id}`)).status, 403);
     assert.equal((await guest("GET", `/api/events/${event.id}`)).body.data.title, "Acara milik orang lain");
   });
