@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { deleteEvent, getEvent, updateEvent } from "@/lib/events";
+import { assertCanManage, deleteEvent, getEvent, updateEvent } from "@/lib/events";
 import { ApiError, handle, json, noContent, parseId, readJson } from "@/lib/http";
 import { eventSchema } from "@/lib/validation";
 
@@ -15,6 +15,7 @@ export const GET = handle(async (_request, context: Context, t) => {
 export const PUT = handle(async (request, context: Context, t) => {
   const user = await requireUser();
   const id = parseId((await context.params).id, t.fields.eventId);
+  await assertCanManage(id, user);
   const input = eventSchema(t).parse(await readJson(request));
   return json(await updateEvent(id, user, input));
 });
