@@ -1,0 +1,88 @@
+# Kumpul: aplikasi pendaftaran acara.
+#   cp .env.example .env
+#   docker compose up -d --build
+# lalu buka http://localhost:3000
+
+name: kumpul
+
+services:
+  db:
+    build: ./db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Salin .env.example ke .env dulu}
+      POSTGRES_USER: ${POSTGRES_USER:?Salin .env.example ke .env dulu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Isi POSTGRES_PASSWORD di .env}
+    volumes:
+      # Volume bernama: data tetap ada walau container dihapus (docker compose down).
+      - db_data:/var/lib/postgresql/data
+    # Tidak ada "ports": database hanya bisa dihubungi dari jaringan backend, bukan dari luar.
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:?Salin .env.example ke .env dulu}
+      DB_USER: ${POSTGRES_USER:?Salin .env.example ke .env dulu}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Isi POSTGRES_PASSWORD di .env}
+      ORGANIZER_PASSWORD: ${ORGANIZER_PASSWORD:-}
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Melihat isi database lewat browser: docker compose --profile debug up -d adminer
+  adminer:
+    image: adminer:4
+    profiles: [debug]
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [frontend, backend]
+
+  # Uji API otomatis: docker compose --profile test run --rm uji
+  uji:
+    image: node:26.12.0-bookworm-slim
+    profiles: [test]
+    working_dir: /tests
+    volumes:
+      - ./tests:/tests:ro
+    environment:
+      BASE_URL: http://web:3000
+      ORGANIZER_PASSWORD: ${ORGANIZER_PASSWORD:-}
+    command: ["node", "--test", "api.test.mjs"]
+    depends_on:
+      web:
+        condition: service_healthy
+    networks: [frontend]
+
+networks:
+  frontend:
+  # internal: tidak punya akses keluar ke internet. Cukup untuk web <-> db.
+  backend:
+    internal: true
+
+volumes:
+  db_data:

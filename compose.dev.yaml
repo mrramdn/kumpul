@@ -1,0 +1,10 @@
+# Tambahan untuk mengembangkan web tanpa membangun image: database dibuka di 127.0.0.1:5432,
+# lalu web dijalankan langsung di laptop.
+#   docker compose -f compose.yaml -f compose.dev.yaml up -d db
+#   pnpm dev
+services:
+  db:
+    # Jaringan backend bersifat internal (tidak bisa membuka port), jadi db ikut jaringan frontend juga.
+    networks: [backend, frontend]
+    ports:
+      - "127.0.0.1:${DB_PORT_LOCAL:-5432}:5432"
