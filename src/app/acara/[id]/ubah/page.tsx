@@ -30,7 +30,7 @@ export default async function EditEventPage({ params }: PageProps<"/acara/[id]/u
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
         <EventForm
           eventId={event.id}
-          initial={{
+          defaults={{
             title: event.title,
             host: event.host,
             description: event.description,

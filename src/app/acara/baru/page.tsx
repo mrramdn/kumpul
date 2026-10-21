@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDictionary } from "@/i18n";
-import { EMPTY_EVENT, EventForm } from "@/components/event-form";
+import { EventForm } from "@/components/event-form";
 import { pageClass } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -17,7 +17,7 @@ export default async function NewEventPage() {
     <div className={pageClass}>
       <h1 className="type-h1">{t.form.createTitle}</h1>
       <p className="mt-1 mb-6 type-small text-muted-foreground">{t.form.createSubtitle}</p>
-      <EventForm initial={{ ...EMPTY_EVENT, host: user.name }} />
+      <EventForm defaults={{ host: user.name }} />
     </div>
   );
 }

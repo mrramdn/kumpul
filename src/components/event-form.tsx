@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { sendJson } from "@/lib/client-api";
+import { DateTimeField } from "./date-time-field";
 import { useDictionary } from "./dictionary-provider";
 import { FormMessage, TextArea, TextField } from "./field";
 import { buttonClass, cardClass } from "./ui";
@@ -19,7 +20,7 @@ export type EventFormValues = {
   capacity: string;
 };
 
-export const EMPTY_EVENT: EventFormValues = {
+const EMPTY: EventFormValues = {
   title: "",
   host: "",
   description: "",
@@ -29,8 +30,12 @@ export const EMPTY_EVENT: EventFormValues = {
   capacity: "",
 };
 
-/** Form buat acara (tanpa eventId) dan ubah acara (dengan eventId). Validasinya di server. */
-export function EventForm({ eventId, initial = EMPTY_EVENT }: { eventId?: string; initial?: EventFormValues }) {
+/**
+ * Form buat acara (tanpa eventId) dan ubah acara (dengan eventId). Validasinya di server.
+ * defaults boleh sebagian (misalnya hanya host); sisanya kosong.
+ */
+export function EventForm({ eventId, defaults = {} }: { eventId?: string; defaults?: Partial<EventFormValues> }) {
+  const initial = { ...EMPTY, ...defaults };
   const t = useDictionary();
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -93,22 +98,13 @@ export function EventForm({ eventId, initial = EMPTY_EVENT }: { eventId?: string
         maxLength={80}
         error={errors.host}
       />
-      <TextField
+      <DateTimeField
         label={t.fields.startsAt}
         name="startsAt"
-        type="datetime-local"
         defaultValue={initial.startsAt}
-        required
         error={errors.startsAt}
       />
-      <TextField
-        label={t.fields.endsAt}
-        name="endsAt"
-        type="datetime-local"
-        defaultValue={initial.endsAt}
-        required
-        error={errors.endsAt}
-      />
+      <DateTimeField label={t.fields.endsAt} name="endsAt" defaultValue={initial.endsAt} error={errors.endsAt} />
       <TextField
         label={t.fields.location}
         name="location"
