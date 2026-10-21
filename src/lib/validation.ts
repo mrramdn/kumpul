@@ -17,6 +17,17 @@ function text(t: Dictionary, label: string, min: number, max: number) {
     .max(max, format(v.max, { label, max }));
 }
 
+function email(t: Dictionary) {
+  const label = t.fields.email;
+  return z
+    .string({ error: format(t.validation.required, { label }) })
+    .trim()
+    .toLowerCase()
+    .min(1, format(t.validation.required, { label }))
+    .max(160, format(t.validation.max, { label, max: 160 }))
+    .pipe(z.email(t.validation.email));
+}
+
 function dateTime(t: Dictionary, label: string) {
   const v = t.validation;
   return z.string({ error: format(v.required, { label }) }).transform((value, context) => {
@@ -58,19 +69,30 @@ export function eventSchema(t: Dictionary) {
     .refine((event) => event.endsAt > event.startsAt, { path: ["endsAt"], message: v.endAfterStart });
 }
 
-export function registrationSchema(t: Dictionary) {
-  const { fields: f, validation: v } = t;
+export function registerSchema(t: Dictionary) {
+  const label = t.fields.password;
   return z.object({
-    name: text(t, f.name, 2, 80),
-    email: z
-      .string({ error: format(v.required, { label: f.email }) })
-      .trim()
-      .toLowerCase()
-      .min(1, format(v.required, { label: f.email }))
-      .max(160, format(v.max, { label: f.email, max: 160 }))
-      .pipe(z.email(v.email)),
+    name: text(t, t.fields.name, 2, 80),
+    email: email(t),
+    // Tidak di-trim: spasi di awal atau akhir dianggap bagian dari password.
+    password: z
+      .string({ error: format(t.validation.required, { label }) })
+      .min(1, format(t.validation.required, { label }))
+      .min(8, format(t.validation.min, { label, min: 8 }))
+      .max(200, format(t.validation.max, { label, max: 200 })),
+  });
+}
+
+export function loginSchema(t: Dictionary) {
+  const label = t.fields.password;
+  return z.object({
+    email: email(t),
+    password: z
+      .string({ error: format(t.validation.required, { label }) })
+      .min(1, format(t.validation.required, { label }))
+      .max(200, format(t.validation.max, { label, max: 200 })),
   });
 }
 
 export type EventInput = z.infer<ReturnType<typeof eventSchema>>;
-export type RegistrationInput = z.infer<ReturnType<typeof registrationSchema>>;
+export type RegisterInput = z.infer<ReturnType<typeof registerSchema>>;

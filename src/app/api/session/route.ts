@@ -1,35 +1,23 @@
-import { cookies } from "next/headers";
-import { z } from "zod";
-import { format } from "@/i18n/format";
-import { isOrganizer } from "@/lib/auth";
-import { ApiError, handle, json, noContent, readJson } from "@/lib/http";
-import { authEnabled, checkPassword, createSession, SESSION_COOKIE } from "@/lib/session";
+import { endSession, getCurrentUser, startSession } from "@/lib/auth";
+import { handle, json, noContent, readJson } from "@/lib/http";
+import { authenticate } from "@/lib/users";
+import { loginSchema } from "@/lib/validation";
 
+/** Akun yang sedang masuk, atau null. */
 export const GET = handle(async () => {
-  return json({ authEnabled: authEnabled(), organizer: await isOrganizer() });
+  return json({ user: await getCurrentUser() });
 });
 
+/** Masuk: email dan password. Server memasang cookie sesi HttpOnly. */
 export const POST = handle(async (request, _context, t) => {
-  const required = format(t.validation.required, { label: t.fields.password });
-  const { password } = z
-    .object({ password: z.string({ error: required }).min(1, required).max(200) })
-    .parse(await readJson(request));
-  if (!authEnabled()) return json({ authEnabled: false, organizer: true });
-  if (!checkPassword(password)) throw new ApiError(401, "WRONG_PASSWORD", { field: "password" });
-
-  const session = createSession();
-  (await cookies()).set(SESSION_COOKIE, session.value, {
-    httpOnly: true,
-    sameSite: "lax",
-    // Di server, nginx meneruskan X-Forwarded-Proto: https. Di laptop (http://localhost) cookie tetap jalan.
-    secure: request.headers.get("x-forwarded-proto") === "https",
-    path: "/",
-    expires: session.expires,
-  });
-  return json({ authEnabled: true, organizer: true });
+  const input = loginSchema(t).parse(await readJson(request));
+  const user = await authenticate(input.email, input.password);
+  await startSession(user.id, request);
+  return json({ user });
 });
 
+/** Keluar: sesi dihapus dari database, cookie dihapus dari browser. */
 export const DELETE = handle(async () => {
-  (await cookies()).delete(SESSION_COOKIE);
+  await endSession();
   return noContent();
 });
