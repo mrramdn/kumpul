@@ -7,8 +7,6 @@ lalu mendaftar ke acara lain dengan satu klik.
 - Dokumentasi API: https://kumpul.mrramdn.com/api/docs
 - Status layanan: https://kumpul.mrramdn.com/api/health
 
-Proyek mata kuliah Cloud Services (COMP6991031), checkpoint sebelum UTS.
-
 ## Fitur
 
 - Akun pengguna: daftar, masuk, keluar, dan hapus akun. Password disimpan sebagai hash scrypt; sesi disimpan di
@@ -23,6 +21,8 @@ Proyek mata kuliah Cloud Services (COMP6991031), checkpoint sebelum UTS.
 - Dua bahasa (Indonesia dan Inggris) di seluruh halaman, dokumentasi API, dan pesan error; tema terang dan gelap.
 
 ## Arsitektur
+
+Jalur request, model data, dan alasan setiap pilihan teknis ada di [docs/arsitektur.md](docs/arsitektur.md).
 
 ```mermaid
 flowchart LR
@@ -139,7 +139,7 @@ menghapusnya lagi di akhir, beserta acaranya.
 Workflow **Checks** di GitHub Actions menjalankan lint, typecheck, seluruh stack dengan Docker Compose, tes di atas,
 dan uji persistensi pada setiap push dan pull request. Hasil uji lokal ada di [docs/pengujian.md](docs/pengujian.md).
 
-### Skenario demo
+### Skenario uji manual
 
 **1. Aplikasi berjalan.** `docker compose ps` menunjukkan `db` dan `web` dalam status `(healthy)`, lalu buka
 http://localhost:3000.
@@ -251,41 +251,18 @@ flowchart LR
 │   ├── i18n/               # teks Indonesia dan Inggris
 │   ├── lib/                # koneksi database, query SQL, akun dan sesi, validasi, log, spesifikasi OpenAPI
 │   └── proxy.ts            # mengarahkan halaman yang butuh akun ke /masuk
+├── docs/                   # arsitektur dan bukti pengujian
 ├── tests/api.test.mjs      # uji API
 └── .github/workflows/      # Checks dan Deploy
 ```
 
-## Hubungan dengan materi Week 1–7
+## Berkontribusi
 
-| Minggu | Materi                                                       | Penerapan di Kumpul                                                                                                                                                                                                                   |
-| ------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01     | Model layanan cloud, shared responsibility                   | Aplikasi di-deploy ke VPS (IaaS): sistem operasi, Docker, nginx, dan backup menjadi tanggung jawab kami; GHCR dan GitHub Actions dipakai sebagai layanan terkelola                                                                    |
-| 02     | Git, Linux, permission, otomasi shell                        | Riwayat Git dan pull request; container berjalan sebagai user non-root; secret di file mode 600 di server; deploy otomatis lewat skrip shell                                                                                          |
-| 03     | DNS, HTTP, port, TLS, diagnosis antar tier                   | `kumpul.mrramdn.com` lewat Cloudflare dan TLS di nginx; status HTTP yang tepat (201, 204, 400, 401, 404, 409, 503); `/api/health` dan log untuk diagnosis                                                                             |
-| 04     | VM dan container                                             | Aplikasi dan database berjalan sebagai container terpisah di satu host                                                                                                                                                                |
-| 05     | Dockerfile dan lifecycle image                               | `Dockerfile` multi-stage (deps, build, runtime) dan image `db` turunan `postgres:16-alpine`; image diberi tag commit di GHCR                                                                                                          |
-| 06     | Docker Compose: network, volume, healthcheck, API + database | Jaringan `frontend` dan `backend` (internal), volume `db_data`, healthcheck dan `depends_on`, REST API dengan PostgreSQL                                                                                                              |
-| 07     | Skema data, Auth/RLS                                         | Skema `users`, `sessions`, `events`, `registrations` dengan CHECK, UNIQUE, FOREIGN KEY `ON DELETE CASCADE`, dan UUID; akun dengan password scrypt dan sesi di database; otorisasi per pemilik acara (403). RLS direncanakan untuk UAS |
+Fork repository ini, buat branch, commit dengan identitas Git masing-masing, lalu buka pull request ke `main`.
+Checks harus lulus sebelum di-merge; deploy berjalan otomatis setelah merge.
 
-Cache (Redis) dari Lab 06 sengaja tidak dipakai: data kecil dan selalu harus terbaru (sisa kuota), jadi cache
-belum memberi manfaat yang sebanding dengan risiko data basi.
+## Batasan saat ini
 
-## Tim dan kontribusi
-
-| Nama           | NIM | GitHub    | Peran                    | Kontribusi                                                              |
-| -------------- | --- | --------- | ------------------------ | ----------------------------------------------------------------------- |
-| Nama Anggota 1 | NIM | @username | Infrastruktur dan deploy | Dockerfile, `compose.yaml` (network, volume, healthcheck), CI/CD ke VPS |
-| Nama Anggota 2 | NIM | @username | Backend dan database     | Skema PostgreSQL, REST API, validasi, log, dokumentasi OpenAPI          |
-| Nama Anggota 3 | NIM | @username | Frontend dan pengujian   | Halaman acara dan form, dua bahasa, uji API dan bukti pengujian         |
-
-Cara berkontribusi: fork repository ini, buat branch, commit dengan identitas Git masing-masing, lalu buka pull
-request ke `main`. Checks harus lulus sebelum di-merge; deploy berjalan otomatis setelah merge.
-
-## Rencana sampai UAS
-
-- Row Level Security di PostgreSQL, sehingga aturan "hanya pemilik yang boleh mengubah acaranya" juga dijaga oleh
-  database, bukan hanya oleh kode aplikasi.
-- Verifikasi email saat membuat akun.
-- Migrasi skema bertahap (saat ini skema hanya dijalankan pada volume kosong).
-- Metrik latensi p50/p95 dari log request dan pemantauan ketersediaan.
-- Backup database terjadwal di server.
+- Email belum diverifikasi saat membuat akun.
+- Aturan kepemilikan acara dijaga di kode aplikasi, belum di level database (Row Level Security).
+- Skema hanya dijalankan pada volume kosong; perubahan skema berikutnya butuh migrasi bertahap.
