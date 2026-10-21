@@ -1,0 +1,315 @@
+/* Tema dari design system Raster 0.2.1 (https://uiux.mrramdn.com), disalin apa adanya. */
+
+/*
+ * Raster: a soft, neutral theme for Tailwind CSS v4. White cards on light gray,
+ * pill controls and one blue.
+ *
+ *   @import "tailwindcss";
+ *   @import "./raster.css";
+ *
+ * Token names follow shadcn/ui, so shadcn components pick the theme up as is.
+ * The rules behind the values are in DESIGN.md.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f4f4f4;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #007aff;
+  --primary-hover: #006ae0;
+  --primary-foreground: #ffffff;
+  --secondary: #eeeeee;
+  --secondary-foreground: #0a0a0a;
+  --muted: #eeeeee;
+  --muted-foreground: #666666;
+  --accent: #eeeeee;
+  --accent-foreground: #0a0a0a;
+  --destructive: #ff3b30;
+  --destructive-foreground: #ffffff;
+  --success: #34c759;
+  --warning: #ff9500;
+  --border: #ebebeb;
+  --input: #d1d1d1;
+  --ring: #007aff;
+  --radius: 1.5rem;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #fafafa;
+  --card: #1a1a1a;
+  --card-foreground: #fafafa;
+  --popover: #1a1a1a;
+  --popover-foreground: #fafafa;
+  --primary: #0a84ff;
+  --primary-hover: #3d9bff;
+  --primary-foreground: #ffffff;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #fafafa;
+  --muted: #2a2a2a;
+  --muted-foreground: #a1a1a1;
+  --accent: #2a2a2a;
+  --accent-foreground: #fafafa;
+  --destructive: #ff453a;
+  --destructive-foreground: #ffffff;
+  --success: #30d158;
+  --warning: #ff9f0a;
+  --border: #2a2a2a;
+  --input: #4a4a4a;
+  --ring: #0a84ff;
+}
+
+@theme {
+  /* The default Tailwind palette is removed on purpose: neutral grays and one blue. */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f4f4f4;
+  --color-gray-150: #eeeeee;
+  --color-gray-200: #ebebeb;
+  --color-gray-300: #d1d1d1;
+  --color-gray-400: #a1a1a1;
+  --color-gray-500: #666666;
+  --color-gray-600: #4a4a4a;
+  --color-gray-700: #2a2a2a;
+  --color-gray-800: #1a1a1a;
+  --color-gray-900: #0a0a0a;
+
+  /* Inter has to be loaded by the app (next/font, @fontsource-variable/inter or a link tag). */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Everything is round. Controls use rounded-full, cards use rounded-2xl (32px). */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+  --radius-4xl: calc(var(--radius) + 24px);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+/*
+ * Type styles. Each one sets size, line height, tracking and weight together.
+ * They are named type-* instead of text-* so tailwind-merge never mistakes
+ * them for a text color.
+ */
+@utility type-display {
+  font-size: 3rem;
+  line-height: 3.25rem;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+@utility type-h1 {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+@utility type-h2 {
+  font-size: 1.75rem;
+  line-height: 2rem;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+@utility type-h3 {
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+@utility type-title {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+@utility type-body {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* The workhorse for interface text: chips, card titles, list rows, small buttons. */
+@utility type-ui {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+@utility type-small {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+@utility type-caption {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+/*
+ * Native checkbox, round like every other control. Checked is a blue disc with a
+ * white check, so it reads apart from the radio's white center.
+ */
+@utility raster-checkbox {
+  appearance: none;
+  flex-shrink: 0;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1.5px solid var(--input);
+  border-radius: 9999px;
+  background-color: var(--card);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 0.875rem;
+  cursor: pointer;
+  transition-property: background-color, border-color;
+  transition-duration: var(--default-transition-duration);
+  transition-timing-function: var(--default-transition-timing-function);
+
+  &:checked {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+/*
+ * Native range input. Chrome and Safari cannot paint the filled part on their
+ * own, so set --slider-fill to the value in percent whenever the input changes.
+ */
+@utility raster-slider {
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 0.3125rem;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--primary) var(--slider-fill, 50%),
+      var(--secondary) var(--slider-fill, 50%)
+    );
+  }
+
+  &::-moz-range-track {
+    height: 0.3125rem;
+    border-radius: 9999px;
+    background: var(--secondary);
+  }
+
+  &::-moz-range-progress {
+    height: 0.3125rem;
+    border-radius: 9999px;
+    background: var(--primary);
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: -0.40625rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, var(--primary) 0 6px, #ffffff 6.5px);
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 0.25),
+      0 0 0 0.5px rgb(0 0 0 / 0.08);
+  }
+
+  &::-moz-range-thumb {
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 0;
+    border-radius: 9999px;
+    background: radial-gradient(circle, var(--primary) 0 6px, #ffffff 6.5px);
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 0.25),
+      0 0 0 0.5px rgb(0 0 0 / 0.08);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
