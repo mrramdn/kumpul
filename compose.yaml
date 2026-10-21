@@ -35,7 +35,6 @@ services:
       DB_NAME: ${POSTGRES_DB:?Salin .env.example ke .env dulu}
       DB_USER: ${POSTGRES_USER:?Salin .env.example ke .env dulu}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Isi POSTGRES_PASSWORD di .env}
-      ORGANIZER_PASSWORD: ${ORGANIZER_PASSWORD:-}
     ports:
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
     depends_on:
@@ -71,7 +70,6 @@ services:
       - ./tests:/tests:ro
     environment:
       BASE_URL: http://web:3000
-      ORGANIZER_PASSWORD: ${ORGANIZER_PASSWORD:-}
     command: ["node", "--test", "api.test.mjs"]
     depends_on:
       web:

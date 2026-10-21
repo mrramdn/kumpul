@@ -42,17 +42,19 @@ jobs:
         run: docker compose up -d --build --wait
       - name: Uji API
         run: docker compose --profile test run --rm uji
-      - name: Uji persistensi (data tetap ada setelah docker compose down dan up)
+      - name: Uji persistensi (acara dan sesi login tetap ada setelah docker compose down dan up)
         run: |
           set -euo pipefail
-          password=$(grep '^ORGANIZER_PASSWORD=' .env | cut -d= -f2-)
-          id=$(curl -sf -X POST http://localhost:3000/api/events \
-            -H 'Content-Type: application/json' -H "Authorization: Bearer $password" \
+          base=http://localhost:3000
+          curl -sf -c cookie.txt -X POST "$base/api/users" -H 'Content-Type: application/json' \
+            -d '{"name":"CI","email":"ci@example.test","password":"rahasia-ci-123"}' > /dev/null
+          id=$(curl -sf -b cookie.txt -X POST "$base/api/events" -H 'Content-Type: application/json' \
             -d '{"title":"Uji persistensi","host":"CI","location":"GitHub Actions","startsAt":"2030-01-01T09:00","endsAt":"2030-01-01T10:00"}' \
             | jq -r '.data.id')
           docker compose down
           docker compose up -d --wait
-          curl -sf "http://localhost:3000/api/events/$id" | jq -e '.data.title == "Uji persistensi"'
+          curl -sf "$base/api/events/$id" | jq -e '.data.title == "Uji persistensi"'
+          curl -sf -b cookie.txt "$base/api/session" | jq -e '.data.user.email == "ci@example.test"'
       - name: Log container
         if: failure()
         run: docker compose logs --no-color
