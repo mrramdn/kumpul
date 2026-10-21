@@ -1,4 +1,3 @@
 allowBuilds:
-  "@scarf/scarf": false
   sharp: false
   unrs-resolver: false
