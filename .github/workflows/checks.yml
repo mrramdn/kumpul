@@ -1,0 +1,61 @@
+name: Checks
+
+# Setiap push ke main dan setiap pull request: cek kode, lalu jalankan seluruh stack dengan Docker Compose
+# seperti di laptop, uji API-nya, dan pastikan data tetap ada setelah container dibuat ulang.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code:
+    name: Lint dan typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/setup@v3.0.0
+        with:
+          node-version-file: .node-version
+          cache: true
+          require-lockfile: true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  stack:
+    name: Docker Compose dan uji API
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Siapkan .env dari contoh
+        run: cp .env.example .env
+      - name: Bangun image dan jalankan stack
+        run: docker compose up -d --build --wait
+      - name: Uji API
+        run: docker compose --profile test run --rm uji
+      - name: Uji persistensi (data tetap ada setelah docker compose down dan up)
+        run: |
+          set -euo pipefail
+          password=$(grep '^ORGANIZER_PASSWORD=' .env | cut -d= -f2-)
+          id=$(curl -sf -X POST http://localhost:3000/api/events \
+            -H 'Content-Type: application/json' -H "Authorization: Bearer $password" \
+            -d '{"title":"Uji persistensi","host":"CI","location":"GitHub Actions","startsAt":"2030-01-01T09:00","endsAt":"2030-01-01T10:00"}' \
+            | jq -r '.data.id')
+          docker compose down
+          docker compose up -d --wait
+          curl -sf "http://localhost:3000/api/events/$id" | jq -e '.data.title == "Uji persistensi"'
+      - name: Log container
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Bersihkan
+        if: always()
+        run: docker compose down -v

@@ -1,0 +1,67 @@
+name: Deploy
+
+# Berjalan setelah Checks lulus untuk push ke main: membangun image web dan db, mengirimnya ke GitHub
+# Container Registry (GHCR), lalu meminta VPS menjalankan commit ini.
+on:
+  workflow_run:
+    workflows: [Checks]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+  SHA: ${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Secret deploy hanya ada di environment ini, dan environment ini hanya boleh dipakai branch main.
+    environment:
+      name: production
+      url: https://kumpul.mrramdn.com
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+      - name: Bangun dan kirim image ke GHCR
+        run: |
+          printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build --tag "$IMAGE/web:$SHA" --tag "$IMAGE/web:latest" .
+          docker build --tag "$IMAGE/db:$SHA" --tag "$IMAGE/db:latest" db
+          docker push --all-tags "$IMAGE/web"
+          docker push --all-tags "$IMAGE/db"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Jalankan commit ini di VPS
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # Kunci ini hanya bisa menjalankan skrip deploy di server ("<stack> <commit>"); token hanya untuk menarik image.
+          printf '%s\n' "$GITHUB_TOKEN" | ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "deploy@$DEPLOY_HOST" "kumpul $SHA"
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Cek situs
+        run: |
+          for attempt in $(seq 1 12); do
+            curl -sf https://kumpul.mrramdn.com/api/health && exit 0
+            sleep 5
+          done
+          exit 1
