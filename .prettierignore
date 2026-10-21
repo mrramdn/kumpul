@@ -1,0 +1,5 @@
+pnpm-lock.yaml
+.next
+# YAML ditulis rapi dengan tangan (healthcheck satu baris lebih mudah dibaca)
+*.yaml
+*.yml
