@@ -1,23 +1,14 @@
 import { CalendarPlus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDictionary, type Dictionary } from "@/i18n";
-import { EventCard } from "@/components/event-card";
+import { getDictionary } from "@/i18n";
+import { dayLabel, EventCard } from "@/components/event-card";
 import { buttonClass, cardClass, pageClass } from "@/components/ui";
 import { listEvents } from "@/lib/events";
-import { dayKey, formatDayMonth, formatWeekday } from "@/lib/time";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
   return { title: t.home.title };
-}
-
-/** "Hari ini", "Besok", atau "Sabtu, 24 Okt". */
-function dayLabel(date: Date, now: Date, t: Dictionary) {
-  const day = dayKey(date);
-  if (day === dayKey(now)) return t.time.today;
-  if (day === dayKey(new Date(now.getTime() + 24 * 60 * 60 * 1000))) return t.time.tomorrow;
-  return `${formatWeekday(date, t.locale)}, ${formatDayMonth(date, t.locale)}`;
 }
 
 const segmentClass =

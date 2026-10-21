@@ -6,16 +6,15 @@ import { cache } from "react";
 import { getDictionary } from "@/i18n";
 import { format } from "@/i18n/format";
 import { goingLabel } from "@/components/event-card";
-import { RegistrationForm } from "@/components/registration-form";
+import { RegistrationPanel } from "@/components/registration-panel";
 import { RemoveAttendeeButton } from "@/components/remove-attendee-button";
 import { StatusBadge } from "@/components/status-badge";
 import { buttonClass, cardClass, pageClass } from "@/components/ui";
-import { isOrganizer } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { eventStatus, registrationClosed } from "@/lib/event-status";
 import { getEvent, listRegistrations } from "@/lib/events";
-import { initials, maskEmail } from "@/lib/format";
+import { initials } from "@/lib/format";
 import { isUuid } from "@/lib/http";
-import { authEnabled } from "@/lib/session";
 import { formatFullDate, formatTimeRange } from "@/lib/time";
 
 // generateMetadata dan halaman sama-sama butuh acaranya; cache() membuatnya cukup satu query per request.
@@ -30,13 +29,20 @@ export default async function EventPage({ params }: PageProps<"/acara/[id]">) {
   const event = await loadEvent((await params).id);
   if (!event) notFound();
 
-  const [t, registrations, organizer] = await Promise.all([
-    getDictionary(),
-    listRegistrations(event.id),
-    isOrganizer(),
-  ]);
+  const [t, registrations, user] = await Promise.all([getDictionary(), listRegistrations(event.id), getCurrentUser()]);
   const status = eventStatus(event, new Date());
-  const closed = registrationClosed(status);
+  const isOwner = user?.id === event.ownerId;
+  const canManage = isOwner || user?.isAdmin === true;
+  const mine = user ? registrations.find((registration) => registration.userId === user.id) : undefined;
+  const panel = isOwner
+    ? ({ kind: "owner" } as const)
+    : mine
+      ? ({ kind: "registered", registrationId: mine.id, canCancel: status.kind !== "ended" } as const)
+      : registrationClosed(status)
+        ? ({ kind: "closed", reason: status.kind === "ended" ? "ended" : "full" } as const)
+        : user
+          ? ({ kind: "open", name: user.name, email: user.email } as const)
+          : ({ kind: "guest" } as const);
 
   return (
     <div className={pageClass}>
@@ -105,12 +111,18 @@ export default async function EventPage({ params }: PageProps<"/acara/[id]">) {
                     {initials(registration.name)}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate type-ui">{registration.name}</span>
-                    <span className="block truncate type-caption text-muted-foreground">
-                      {organizer ? registration.email : maskEmail(registration.email)}
+                    <span className="block truncate type-ui">
+                      {registration.name}
+                      {registration.userId === user?.id && (
+                        <span className="ml-2 type-caption text-muted-foreground">({t.event.you})</span>
+                      )}
                     </span>
+                    {/* Email peserta hanya untuk pemilik acara dan admin. */}
+                    {canManage && (
+                      <span className="block truncate type-caption text-muted-foreground">{registration.email}</span>
+                    )}
                   </span>
-                  {organizer && (
+                  {canManage && (
                     <RemoveAttendeeButton
                       eventId={event.id}
                       registrationId={registration.id}
@@ -153,16 +165,10 @@ export default async function EventPage({ params }: PageProps<"/acara/[id]">) {
                 </div>
               </div>
             )}
-            {closed ? (
-              <p className="mt-5 rounded-lg bg-secondary px-4 py-3 type-small">
-                {status.kind === "ended" ? t.registration.closedEnded : t.registration.closedFull}
-              </p>
-            ) : (
-              <RegistrationForm eventId={event.id} />
-            )}
+            <RegistrationPanel eventId={event.id} state={panel} />
           </section>
 
-          {organizer ? (
+          {canManage && (
             <section className={`${cardClass} p-6`}>
               <h2 className="type-title">{t.event.manage}</h2>
               <p className="mt-1 type-small text-muted-foreground">{t.event.manageHint}</p>
@@ -171,15 +177,6 @@ export default async function EventPage({ params }: PageProps<"/acara/[id]">) {
                 {t.event.edit}
               </Link>
             </section>
-          ) : (
-            authEnabled() && (
-              <Link
-                href={`/masuk?lanjut=/acara/${event.id}`}
-                className="block rounded-full px-2 type-small text-muted-foreground hover:text-foreground"
-              >
-                {t.event.organizerLogin}
-              </Link>
-            )
           )}
         </aside>
       </div>

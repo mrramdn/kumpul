@@ -19,7 +19,7 @@ export type EventFormValues = {
   capacity: string;
 };
 
-const EMPTY: EventFormValues = {
+export const EMPTY_EVENT: EventFormValues = {
   title: "",
   host: "",
   description: "",
@@ -30,7 +30,7 @@ const EMPTY: EventFormValues = {
 };
 
 /** Form buat acara (tanpa eventId) dan ubah acara (dengan eventId). Validasinya di server. */
-export function EventForm({ eventId, initial = EMPTY }: { eventId?: string; initial?: EventFormValues }) {
+export function EventForm({ eventId, initial = EMPTY_EVENT }: { eventId?: string; initial?: EventFormValues }) {
   const t = useDictionary();
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -88,6 +88,7 @@ export function EventForm({ eventId, initial = EMPTY }: { eventId?: string; init
         name="host"
         defaultValue={initial.host}
         placeholder={t.form.hostPlaceholder}
+        hint={t.form.hostHint}
         required
         maxLength={80}
         error={errors.host}

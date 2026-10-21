@@ -4,10 +4,18 @@ import type { Dictionary } from "@/i18n/id";
 import { format } from "@/i18n/format";
 import { eventStatus } from "@/lib/event-status";
 import type { Event } from "@/lib/events";
-import { formatTimeRange } from "@/lib/time";
+import { dayKey, formatDayMonth, formatTimeRange, formatWeekday } from "@/lib/time";
 import { AttendeeAvatars } from "./attendee-avatars";
 import { StatusBadge } from "./status-badge";
 import { cardClass } from "./ui";
+
+/** "Hari ini", "Besok", atau "Sabtu, 24 Okt". */
+export function dayLabel(date: Date, now: Date, t: Dictionary) {
+  const day = dayKey(date);
+  if (day === dayKey(now)) return t.time.today;
+  if (day === dayKey(new Date(now.getTime() + 24 * 60 * 60 * 1000))) return t.time.tomorrow;
+  return `${formatWeekday(date, t.locale)}, ${formatDayMonth(date, t.locale)}`;
+}
 
 export function goingLabel(event: Pick<Event, "registeredCount" | "capacity">, t: Dictionary) {
   return event.capacity === null

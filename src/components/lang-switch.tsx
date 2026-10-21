@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LANG_COOKIE, PREFERENCE_MAX_AGE } from "@/lib/cookies";
 import { useDictionary } from "./dictionary-provider";
 
 const LANGS = [
@@ -10,7 +11,7 @@ const LANGS = [
 
 // Disimpan setahun. Server membaca cookie ini untuk memilih kamus bahasa.
 function saveLang(code: string) {
-  document.cookie = `kumpul_lang=${code}; path=/; max-age=31536000; samesite=lax`;
+  document.cookie = `${LANG_COOKIE}=${code}; path=/; max-age=${PREFERENCE_MAX_AGE}; samesite=lax`;
 }
 
 export function LangSwitch({ lang }: { lang: string }) {

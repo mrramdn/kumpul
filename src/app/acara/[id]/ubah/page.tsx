@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getDictionary } from "@/i18n";
 import { DeleteEvent } from "@/components/delete-event";
 import { EventForm } from "@/components/event-form";
 import { pageClass } from "@/components/ui";
 import { getEvent } from "@/lib/events";
+import { getCurrentUser } from "@/lib/auth";
 import { isUuid } from "@/lib/http";
 import { toLocalInput } from "@/lib/time";
 
@@ -13,11 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t.form.editTitle };
 }
 
-// Hanya penyelenggara yang sampai ke sini: yang belum masuk sudah diarahkan ke /masuk oleh src/proxy.ts.
+// Hanya pemilik acara atau admin. Yang belum masuk sudah diarahkan ke /masuk oleh src/proxy.ts;
+// akun lain mendapat 404, sama seperti acara yang tidak ada.
 export default async function EditEventPage({ params }: PageProps<"/acara/[id]/ubah">) {
   const { id } = await params;
-  const event = isUuid(id) ? await getEvent(id.toLowerCase()) : null;
-  if (!event) notFound();
+  const [event, user] = await Promise.all([isUuid(id) ? getEvent(id.toLowerCase()) : null, getCurrentUser()]);
+  if (!event || !user) redirect(`/masuk?lanjut=/acara/${id}/ubah`);
+  if (event.ownerId !== user.id && !user.isAdmin) notFound();
   const t = await getDictionary();
 
   return (
