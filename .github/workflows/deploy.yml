@@ -52,16 +52,10 @@ jobs:
           chmod 600 ~/.ssh/deploy
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           # Kunci ini hanya bisa menjalankan skrip deploy di server ("<stack> <commit>"); token hanya untuk menarik image.
+          # Skrip itu menjalankan docker compose up --wait, jadi langkah ini baru berhasil kalau semua container sehat.
           printf '%s\n' "$GITHUB_TOKEN" | ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "deploy@$DEPLOY_HOST" "kumpul $SHA"
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           GITHUB_TOKEN: ${{ github.token }}
-      - name: Cek situs
-        run: |
-          for attempt in $(seq 1 12); do
-            curl -sf https://kumpul.mrramdn.com/api/health && exit 0
-            sleep 5
-          done
-          exit 1
